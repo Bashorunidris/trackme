@@ -1,0 +1,2783 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TrackMe - Campus Safety & Location Tracking</title>
+    
+    <!-- Firebase SDK (Compat version for non-module usage) -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
+    
+    <!-- Google Maps API -->
+    <script src="https://maps.googleapis.com/maps/api/js?key=YOUR_GOOGLE_MAPS_API_KEY"></script>
+    
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1e40af;
+            --secondary: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --success: #10b981;
+            --text-dark: #1f2937;
+            --text-light: #6b7280;
+            --bg-light: #f9fafb;
+            --bg-white: #ffffff;
+            --border: #e5e7eb;
+            --shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: var(--bg-light);
+            color: var(--text-dark);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        /* ===== AUTH SCREENS ===== */
+        .auth-container {
+            display: flex;
+            height: 100vh;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+        }
+
+        .auth-left {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+            color: white;
+        }
+
+        .auth-left-content h1 {
+            font-size: 3.5rem;
+            font-weight: 800;
+            margin-bottom: 20px;
+            line-height: 1.2;
+        }
+
+        .auth-left-content p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+            margin-bottom: 30px;
+        }
+
+        .auth-features {
+            list-style: none;
+        }
+
+        .auth-features li {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+            font-size: 1rem;
+        }
+
+        .auth-features i {
+            margin-right: 12px;
+            font-size: 1.3rem;
+        }
+
+        .auth-right {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+            background: var(--bg-white);
+        }
+
+        .auth-form {
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .auth-form h2 {
+            margin-bottom: 10px;
+            font-size: 2rem;
+            color: var(--text-dark);
+        }
+
+        .auth-form p {
+            color: var(--text-light);
+            margin-bottom: 30px;
+        }
+
+        .form-group {
+            margin-bottom: 18px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 500;
+            color: var(--text-dark);
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+            font-family: inherit;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .btn-secondary {
+            background: var(--bg-light);
+            color: var(--primary);
+            border: 2px solid var(--primary);
+        }
+
+        .btn-secondary:hover {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-success {
+            background: var(--success);
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #059669;
+        }
+
+        .btn-danger {
+            background: var(--danger);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #dc2626;
+        }
+
+        .btn-warning {
+            background: var(--warning);
+            color: white;
+        }
+
+        .btn-warning:hover {
+            background: #d97706;
+        }
+
+        .btn-sm {
+            padding: 8px 16px;
+            font-size: 0.9rem;
+        }
+
+        .btn-icon {
+            width: 40px;
+            height: 40px;
+            padding: 0;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .switch-auth {
+            text-align: center;
+            margin-top: 20px;
+            color: var(--text-light);
+        }
+
+        .switch-auth a {
+            color: var(--primary);
+            font-weight: 600;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .switch-auth a:hover {
+            text-decoration: underline;
+        }
+
+        /* ===== DASHBOARD ===== */
+        .dashboard-container {
+            display: flex;
+            height: 100vh;
+            background: var(--bg-light);
+        }
+
+        .sidebar {
+            width: 280px;
+            background: var(--bg-white);
+            border-right: 1px solid var(--border);
+            padding: 20px;
+            overflow-y: auto;
+            position: relative;
+            z-index: 100;
+        }
+
+        .sidebar-logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 30px;
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .sidebar-logo i {
+            font-size: 1.8rem;
+        }
+
+        .sidebar-menu {
+            list-style: none;
+        }
+
+        .sidebar-menu-item {
+            margin-bottom: 8px;
+        }
+
+        .sidebar-menu-link {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 14px;
+            border-radius: 8px;
+            color: var(--text-dark);
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 500;
+        }
+
+        .sidebar-menu-link:hover,
+        .sidebar-menu-link.active {
+            background: var(--primary);
+            color: white;
+        }
+
+        .sidebar-menu-link i {
+            min-width: 20px;
+        }
+
+        .sidebar-user {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            right: 20px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border);
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--primary);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .user-info {
+            margin-bottom: 10px;
+        }
+
+        .user-info p {
+            margin: 0;
+            font-size: 0.9rem;
+        }
+
+        .user-info .name {
+            font-weight: 600;
+            color: var(--text-dark);
+        }
+
+        .user-info .email {
+            color: var(--text-light);
+            font-size: 0.85rem;
+        }
+
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .top-bar {
+            background: var(--bg-white);
+            border-bottom: 1px solid var(--border);
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: var(--shadow);
+        }
+
+        .top-bar-right {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .notification-bell {
+            cursor: pointer;
+            font-size: 1.3rem;
+            color: var(--text-dark);
+            position: relative;
+        }
+
+        .notification-badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: var(--danger);
+            color: white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7rem;
+            font-weight: bold;
+        }
+
+        .content-area {
+            flex: 1;
+            overflow-y: auto;
+            padding: 30px;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            border-bottom: 2px solid var(--border);
+        }
+
+        .tab-btn {
+            padding: 12px 20px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 1.05rem;
+            font-weight: 600;
+            color: var(--text-light);
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s;
+            position: relative;
+            bottom: -2px;
+        }
+
+        .tab-btn.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+        }
+
+        .tab-btn:hover {
+            color: var(--text-dark);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.3s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ===== TRACK ME TAB ===== */
+        .track-me-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+        }
+
+        .profile-card {
+            background: var(--bg-white);
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: var(--shadow);
+        }
+
+        .profile-header {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 25px;
+        }
+
+        .profile-photo {
+            width: 100px;
+            height: 100px;
+            border-radius: 12px;
+            background: var(--bg-light);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            border: 2px solid var(--border);
+        }
+
+        .profile-photo img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .profile-photo-placeholder {
+            font-size: 2.5rem;
+            color: var(--text-light);
+        }
+
+        .profile-basic {
+            flex: 1;
+        }
+
+        .profile-basic h3 {
+            margin-bottom: 5px;
+            font-size: 1.3rem;
+        }
+
+        .profile-basic p {
+            color: var(--text-light);
+            font-size: 0.9rem;
+            margin-bottom: 3px;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-top: 8px;
+        }
+
+        .status-active {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--success);
+        }
+
+        .status-paused {
+            background: rgba(107, 114, 128, 0.1);
+            color: var(--text-light);
+        }
+
+        .privacy-section {
+            margin-top: 25px;
+            padding-top: 25px;
+            border-top: 1px solid var(--border);
+        }
+
+        .privacy-section h4 {
+            margin-bottom: 15px;
+            font-size: 1rem;
+            color: var(--text-dark);
+        }
+
+        .privacy-options {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .privacy-option {
+            padding: 15px;
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: center;
+        }
+
+        .privacy-option.selected {
+            border-color: var(--primary);
+            background: rgba(37, 99, 235, 0.05);
+        }
+
+        .privacy-option h5 {
+            margin-bottom: 5px;
+            font-size: 0.9rem;
+        }
+
+        .privacy-option p {
+            font-size: 0.8rem;
+            color: var(--text-light);
+        }
+
+        .tracking-controls {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border);
+        }
+
+        .tracking-controls h4 {
+            margin-bottom: 15px;
+        }
+
+        .control-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .toggle-switch {
+            position: relative;
+            width: 50px;
+            height: 28px;
+            background: var(--border);
+            border-radius: 14px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .toggle-switch.active {
+            background: var(--success);
+        }
+
+        .toggle-switch::after {
+            content: '';
+            position: absolute;
+            top: 3px;
+            left: 3px;
+            width: 22px;
+            height: 22px;
+            background: white;
+            border-radius: 50%;
+            transition: left 0.3s;
+        }
+
+        .toggle-switch.active::after {
+            left: 25px;
+        }
+
+        /* ===== LIVE TRACKING ===== */
+        .live-tracking-section {
+            background: var(--bg-white);
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: var(--shadow);
+        }
+
+        .live-status {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .live-indicator {
+            width: 12px;
+            height: 12px;
+            background: var(--success);
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .coordinates-display {
+            background: var(--bg-light);
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+        }
+
+        .coord-label {
+            color: var(--text-light);
+            font-size: 0.85rem;
+        }
+
+        .coord-value {
+            font-weight: 600;
+            color: var(--text-dark);
+            margin-top: 3px;
+        }
+
+        .map-container {
+            width: 100%;
+            height: 400px;
+            border-radius: 8px;
+            overflow: hidden;
+            margin-bottom: 15px;
+            border: 1px solid var(--border);
+        }
+
+        #liveMap {
+            width: 100%;
+            height: 100%;
+        }
+
+        .timestamp {
+            color: var(--text-light);
+            font-size: 0.9rem;
+            margin-bottom: 20px;
+        }
+
+        /* ===== FIND A PERSON TAB ===== */
+        .find-person-section {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .search-container {
+            background: var(--bg-white);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+        }
+
+        .search-box {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .search-box input {
+            flex: 1;
+            padding: 12px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+        }
+
+        .filter-tabs {
+            display: flex;
+            gap: 10px;
+        }
+
+        .filter-btn {
+            padding: 8px 16px;
+            border: 1px solid var(--border);
+            background: var(--bg-white);
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 0.9rem;
+        }
+
+        .filter-btn.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        .users-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+        }
+
+        .user-card {
+            background: var(--bg-white);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+
+        .user-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .user-card-photo {
+            width: 100%;
+            height: 200px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 3rem;
+            overflow: hidden;
+        }
+
+        .user-card-photo img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .user-card-content {
+            padding: 15px;
+        }
+
+        .user-card-name {
+            font-weight: 700;
+            margin-bottom: 5px;
+            font-size: 1.05rem;
+        }
+
+        .user-card-status {
+            font-size: 0.85rem;
+            color: var(--text-light);
+            margin-bottom: 10px;
+        }
+
+        .user-card-location {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.9rem;
+            color: var(--text-light);
+            margin-bottom: 10px;
+        }
+
+        .user-card-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .user-card-actions button {
+            flex: 1;
+            padding: 8px;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-view-location {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-view-location:hover {
+            background: var(--primary-dark);
+        }
+
+        .btn-add-friend {
+            background: var(--bg-light);
+            color: var(--primary);
+            border: 1px solid var(--primary);
+        }
+
+        .btn-add-friend:hover {
+            background: var(--primary);
+            color: white;
+        }
+
+        /* ===== GROUP SYSTEM ===== */
+        .groups-section {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .groups-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .groups-header h3 {
+            font-size: 1.3rem;
+        }
+
+        .group-card {
+            background: var(--bg-white);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: var(--shadow);
+            border-left: 4px solid var(--primary);
+        }
+
+        .group-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 15px;
+        }
+
+        .group-title {
+            font-weight: 700;
+            font-size: 1.1rem;
+            margin-bottom: 5px;
+        }
+
+        .group-members {
+            color: var(--text-light);
+            font-size: 0.9rem;
+        }
+
+        .group-status {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .group-status.active {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--success);
+        }
+
+        .group-status.pending {
+            background: rgba(245, 158, 11, 0.1);
+            color: var(--warning);
+        }
+
+        .group-description {
+            color: var(--text-light);
+            margin-bottom: 15px;
+            font-size: 0.95rem;
+        }
+
+        .group-map {
+            width: 100%;
+            height: 300px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            border: 1px solid var(--border);
+            overflow: hidden;
+        }
+
+        /* ===== MODALS ===== */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-overlay.show {
+            display: flex;
+        }
+
+        .modal {
+            background: var(--bg-white);
+            border-radius: 12px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: var(--shadow-lg);
+            animation: slideUp 0.3s;
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(30px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .modal-header {
+            padding: 25px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h2 {
+            font-size: 1.5rem;
+            margin: 0;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--text-light);
+        }
+
+        .modal-close:hover {
+            color: var(--text-dark);
+        }
+
+        .modal-body {
+            padding: 25px;
+        }
+
+        .modal-footer {
+            padding: 20px 25px;
+            border-top: 1px solid var(--border);
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+
+        /* ===== EDIT PROFILE MODAL ===== */
+        .edit-profile-form {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .form-row.full {
+            grid-template-columns: 1fr;
+        }
+
+        .photo-upload {
+            position: relative;
+        }
+
+        .photo-upload-input {
+            display: none;
+        }
+
+        .photo-upload-btn {
+            background: var(--bg-light);
+            border: 2px dashed var(--border);
+            padding: 30px;
+            border-radius: 8px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .photo-upload-btn:hover {
+            border-color: var(--primary);
+            background: rgba(37, 99, 235, 0.05);
+        }
+
+        /* ===== GROUP APPLICATION MODAL ===== */
+        .group-application-form {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .info-box {
+            background: rgba(37, 99, 235, 0.05);
+            border-left: 4px solid var(--primary);
+            padding: 15px;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            color: var(--text-dark);
+        }
+
+        /* ===== ADMIN PANEL ===== */
+        .admin-panel {
+            display: none;
+        }
+
+        .admin-panel.show {
+            display: block;
+        }
+
+        .admin-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid var(--border);
+        }
+
+        .admin-tab-btn {
+            padding: 12px 20px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            color: var(--text-light);
+            border-bottom: 3px solid transparent;
+            position: relative;
+            bottom: -2px;
+        }
+
+        .admin-tab-btn.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+        }
+
+        .admin-content {
+            display: none;
+        }
+
+        .admin-content.active {
+            display: block;
+        }
+
+        .application-item {
+            background: var(--bg-white);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 15px;
+            border: 1px solid var(--border);
+        }
+
+        .application-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 15px;
+        }
+
+        .application-user {
+            font-weight: 600;
+            font-size: 1.05rem;
+        }
+
+        .application-date {
+            color: var(--text-light);
+            font-size: 0.9rem;
+        }
+
+        .application-content {
+            background: var(--bg-light);
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            font-size: 0.95rem;
+        }
+
+        .application-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 1024px) {
+            .dashboard-container {
+                flex-direction: column;
+            }
+
+            .sidebar {
+                width: 100%;
+                padding: 15px;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                border-right: none;
+                border-bottom: 1px solid var(--border);
+                height: auto;
+                overflow: visible;
+            }
+
+            .sidebar-logo {
+                margin-bottom: 0;
+            }
+
+            .sidebar-menu {
+                display: flex;
+                flex: 1;
+                gap: 5px;
+                margin: 0 30px;
+            }
+
+            .sidebar-menu-item {
+                margin-bottom: 0;
+            }
+
+            .sidebar-user {
+                position: static;
+                border: none;
+                padding: 0;
+                margin-left: auto;
+                display: flex;
+                align-items: center;
+                gap: 15px;
+            }
+
+            .user-info {
+                margin-bottom: 0;
+            }
+
+            .user-avatar {
+                margin-bottom: 0;
+            }
+
+            .sidebar-menu-link {
+                flex-direction: column;
+                gap: 5px;
+                padding: 8px 12px;
+                font-size: 0.85rem;
+            }
+
+            .track-me-section {
+                grid-template-columns: 1fr;
+            }
+
+            .users-grid {
+                grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            }
+        }
+
+        @media (max-width: 768px) {
+            .auth-container {
+                flex-direction: column;
+            }
+
+            .auth-left {
+                display: none;
+            }
+
+            .auth-right {
+                flex: 1;
+                padding: 20px;
+            }
+
+            .auth-form {
+                max-width: 100%;
+            }
+
+            .content-area {
+                padding: 15px;
+            }
+
+            .modal {
+                width: 95%;
+                max-height: 85vh;
+            }
+
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+
+            .sidebar-menu {
+                flex-wrap: wrap;
+            }
+
+            .privacy-options {
+                grid-template-columns: 1fr;
+            }
+
+            .users-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .sidebar-user-name {
+                display: none;
+            }
+        }
+
+        /* ===== UTILITIES ===== */
+        .hidden {
+            display: none !important;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        .mt-20 {
+            margin-top: 20px;
+        }
+
+        .mb-20 {
+            margin-bottom: 20px;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(37, 99, 235, 0.1);
+            border-radius: 50%;
+            border-top-color: var(--primary);
+            animation: spin 0.6s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: var(--text-dark);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 8px;
+            box-shadow: var(--shadow-lg);
+            z-index: 2000;
+            animation: slideInRight 0.3s;
+        }
+
+        @keyframes slideInRight {
+            from { transform: translateX(400px); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        .toast.success {
+            background: var(--success);
+        }
+
+        .toast.error {
+            background: var(--danger);
+        }
+
+        .toast.warning {
+            background: var(--warning);
+        }
+    </style>
+</head>
+<body>
+    <!-- AUTH SCREENS -->
+    <div id="authContainer" class="auth-container">
+        <div class="auth-left">
+            <div class="auth-left-content">
+                <h1>TrackMe</h1>
+                <p>Campus Safety & Location Tracking</p>
+                <ul class="auth-features">
+                    <li><i class="fas fa-map-marker-alt"></i> Real-time location sharing</li>
+                    <li><i class="fas fa-lock"></i> Privacy-controlled visibility</li>
+                    <li><i class="fas fa-shield-alt"></i> Trusted network groups</li>
+                    <li><i class="fas fa-users"></i> Find friends & classmates</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="auth-right">
+            <div class="auth-form">
+                <div id="loginForm">
+                    <h2>Login</h2>
+                    <p>Welcome back to TrackMe</p>
+                    <form id="loginFormElement">
+                        <div class="form-group">
+                            <label>Email</label>
+                            <input type="email" id="loginEmail" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Password</label>
+                            <input type="password" id="loginPassword" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-sign-in-alt"></i> Login
+                        </button>
+                    </form>
+                    <div class="switch-auth">
+                        Don't have an account? <a onclick="toggleAuthForm()">Sign Up</a>
+                    </div>
+                </div>
+
+                <div id="signupForm" style="display: none;">
+                    <h2>Create Account</h2>
+                    <p>Join TrackMe to stay safe</p>
+                    <form id="signupFormElement">
+                        <div class="form-group">
+                            <label>Full Name</label>
+                            <input type="text" id="signupName" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Email</label>
+                            <input type="email" id="signupEmail" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Phone Number</label>
+                            <input type="tel" id="signupPhone" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Password</label>
+                            <input type="password" id="signupPassword" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Confirm Password</label>
+                            <input type="password" id="signupConfirmPassword" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-user-plus"></i> Sign Up
+                        </button>
+                    </form>
+                    <div class="switch-auth">
+                        Already have an account? <a onclick="toggleAuthForm()">Login</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- DASHBOARD -->
+    <div id="dashboardContainer" class="dashboard-container" style="display: none;">
+        <!-- SIDEBAR -->
+        <aside class="sidebar">
+            <div class="sidebar-logo">
+                <i class="fas fa-location-dot"></i>
+                <span>TrackMe</span>
+            </div>
+
+            <ul class="sidebar-menu">
+                <li class="sidebar-menu-item">
+                    <a class="sidebar-menu-link active" onclick="switchTab('trackMe')">
+                        <i class="fas fa-map-marker-alt"></i>
+                        <span>Track Me</span>
+                    </a>
+                </li>
+                <li class="sidebar-menu-item">
+                    <a class="sidebar-menu-link" onclick="switchTab('findPerson')">
+                        <i class="fas fa-search"></i>
+                        <span>Find Person</span>
+                    </a>
+                </li>
+                <li class="sidebar-menu-item">
+                    <a class="sidebar-menu-link" onclick="switchTab('groups')">
+                        <i class="fas fa-users"></i>
+                        <span>Groups</span>
+                    </a>
+                </li>
+                <li class="sidebar-menu-item">
+                    <a class="sidebar-menu-link" onclick="switchTab('friends')">
+                        <i class="fas fa-heart"></i>
+                        <span>Friends</span>
+                    </a>
+                </li>
+                <li class="sidebar-menu-item" id="adminMenuLink" style="display: none;">
+                    <a class="sidebar-menu-link" onclick="switchTab('admin')">
+                        <i class="fas fa-cog"></i>
+                        <span>Admin Panel</span>
+                    </a>
+                </li>
+                <li class="sidebar-menu-item">
+                    <a class="sidebar-menu-link" onclick="switchTab('settings')">
+                        <i class="fas fa-sliders-h"></i>
+                        <span>Settings</span>
+                    </a>
+                </li>
+            </ul>
+
+            <div class="sidebar-user">
+                <div class="user-avatar" id="userAvatarSidebar">U</div>
+                <div class="user-info">
+                    <p class="name" id="userNameSidebar">User</p>
+                    <p class="email" id="userEmailSidebar">user@example.com</p>
+                </div>
+                <button class="btn btn-icon btn-danger" onclick="logout()" title="Logout">
+                    <i class="fas fa-sign-out-alt"></i>
+                </button>
+            </div>
+        </aside>
+
+        <!-- MAIN CONTENT -->
+        <div class="main-content">
+            <!-- TOP BAR -->
+            <div class="top-bar">
+                <h1 id="pageTitle">Track Me</h1>
+                <div class="top-bar-right">
+                    <div class="notification-bell" onclick="openNotifications()">
+                        <i class="fas fa-bell"></i>
+                        <div class="notification-badge" id="notificationBadge" style="display: none;">0</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CONTENT AREA -->
+            <div class="content-area">
+                <!-- TRACK ME TAB -->
+                <div id="trackMeTab" class="tab-content active">
+                    <div class="track-me-section">
+                        <!-- PROFILE CARD -->
+                        <div class="profile-card">
+                            <h3>My Safety Profile</h3>
+                            <div class="profile-header">
+                                <div class="profile-photo" id="profilePhotoDisplay">
+                                    <i class="fas fa-user profile-photo-placeholder"></i>
+                                </div>
+                                <div class="profile-basic">
+                                    <h3 id="displayName">User Name</h3>
+                                    <p id="displayPhone">+1 234 567 8900</p>
+                                    <p id="displayEmail">user@example.com</p>
+                                    <span class="status-badge status-active" id="statusBadge">Active</span>
+                                </div>
+                            </div>
+
+                            <button class="btn btn-primary" onclick="openEditProfileModal()" style="width: 100%;">
+                                <i class="fas fa-edit"></i> Edit Profile
+                            </button>
+
+                            <div class="privacy-section">
+                                <h4>Privacy Mode</h4>
+                                <p style="color: var(--text-light); font-size: 0.9rem; margin-bottom: 15px;">
+                                    Choose who can see your location
+                                </p>
+                                <div class="privacy-options">
+                                    <div class="privacy-option selected" onclick="setPrivacyMode('public')" id="publicOption">
+                                        <h5><i class="fas fa-globe"></i> Public</h5>
+                                        <p>Visible to all users</p>
+                                    </div>
+                                    <div class="privacy-option" onclick="setPrivacyMode('private')" id="privateOption">
+                                        <h5><i class="fas fa-lock"></i> Private</h5>
+                                        <p>Only approved friends</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="tracking-controls">
+                                <h4>Tracking</h4>
+                                <div class="control-group">
+                                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                                        <div class="toggle-switch active" id="trackingToggle" onclick="toggleTracking()"></div>
+                                        <span>Active Tracking</span>
+                                    </label>
+                                </div>
+                                <p style="color: var(--text-light); font-size: 0.85rem;">
+                                    When active, your location is recorded and available to authorized users
+                                </p>
+                            </div>
+                        </div>
+
+                        <!-- LIVE TRACKING -->
+                        <div class="live-tracking-section">
+                            <h3>Live Tracking</h3>
+                            <div class="live-status" id="liveStatusDisplay">
+                                <div class="live-indicator"></div>
+                                <span>Live - Updating</span>
+                            </div>
+
+                            <div class="coordinates-display">
+                                <div class="coord-label">Latitude</div>
+                                <div class="coord-value" id="latDisplay">0.0000</div>
+                                <div class="coord-label" style="margin-top: 10px;">Longitude</div>
+                                <div class="coord-value" id="lonDisplay">0.0000</div>
+                            </div>
+
+                            <div class="map-container" id="mapContainer">
+                                <div id="liveMap"></div>
+                            </div>
+
+                            <div class="timestamp" id="lastUpdated">Last updated: Just now</div>
+
+                            <div style="display: flex; gap: 10px;">
+                                <button class="btn btn-secondary" style="flex: 1;" onclick="pauseTracking()">
+                                    <i class="fas fa-pause"></i> Pause
+                                </button>
+                                <button class="btn btn-danger" style="flex: 1;" onclick="goInvisible()">
+                                    <i class="fas fa-eye-slash"></i> Go Invisible
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- FIND PERSON TAB -->
+                <div id="findPersonTab" class="tab-content">
+                    <div class="find-person-section">
+                        <div class="search-container">
+                            <div class="search-box">
+                                <input type="text" id="searchInput" placeholder="Search by name, email, or phone..." onkeyup="searchUsers()" onchange="searchUsers()">
+                                <button class="btn btn-primary" type="button" onclick="searchUsers()">
+                                    <i class="fas fa-search"></i>
+                                </button>
+                                <button class="btn btn-secondary" type="button" onclick="loadAllUsers()" title="Refresh user list">
+                                    <i class="fas fa-sync-alt"></i>
+                                </button>
+                            </div>
+                            <div class="filter-tabs">
+                                <button class="filter-btn active" onclick="filterUsers('all')">All</button>
+                                <button class="filter-btn" onclick="filterUsers('public')">Public Only</button>
+                                <button class="filter-btn" onclick="filterUsers('friends')">Friends</button>
+                            </div>
+                        </div>
+
+                        <div id="userCountDisplay"></div>
+                        <div id="usersGrid" class="users-grid">
+                            <!-- Users will be populated here -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- GROUPS TAB -->
+                <div id="groupsTab" class="tab-content">
+                    <div class="groups-section">
+                        <div class="groups-header">
+                            <h3>My Groups</h3>
+                            <button class="btn btn-primary" onclick="openGroupApplicationModal()">
+                                <i class="fas fa-plus"></i> Apply for Group
+                            </button>
+                        </div>
+
+                        <div id="groupsList">
+                            <!-- Groups will be populated here -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- FRIENDS TAB -->
+                <div id="friendsTab" class="tab-content">
+                    <div class="find-person-section">
+                        <div class="search-container">
+                            <div class="search-box">
+                                <input type="text" id="friendSearchInput" placeholder="Add friend by name or email..." onkeyup="searchFriends()" onchange="searchFriends()">
+                                <button class="btn btn-primary" type="button" onclick="searchFriends()">
+                                    <i class="fas fa-search"></i>
+                                </button>
+                                <button class="btn btn-secondary" type="button" onclick="loadUserFriends()" title="Refresh friends">
+                                    <i class="fas fa-sync-alt"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div id="friendsCountDisplay"></div>
+                        <div id="friendsList" class="users-grid">
+                            <!-- Friends will be populated here -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ADMIN PANEL -->
+                <div id="adminTab" class="tab-content admin-panel">
+                    <div class="admin-tabs">
+                        <button class="admin-tab-btn active" onclick="switchAdminTab('applications')">
+                            Group Applications
+                        </button>
+                        <button class="admin-tab-btn" onclick="switchAdminTab('groups')">
+                            Manage Groups
+                        </button>
+                        <button class="admin-tab-btn" onclick="switchAdminTab('users')">
+                            Users
+                        </button>
+                    </div>
+
+                    <div id="applicationsContent" class="admin-content active">
+                        <h3>Pending Group Applications</h3>
+                        <div id="applicationsList">
+                            <!-- Applications will be populated here -->
+                        </div>
+                    </div>
+
+                    <div id="groupsAdminContent" class="admin-content">
+                        <h3>Manage Groups</h3>
+                        <div id="groupsAdminList">
+                            <!-- Groups will be populated here -->
+                        </div>
+                    </div>
+
+                    <div id="usersAdminContent" class="admin-content">
+                        <h3>All Users</h3>
+                        <div id="usersAdminList">
+                            <!-- Users will be populated here -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SETTINGS TAB -->
+                <div id="settingsTab" class="tab-content">
+                    <div style="background: var(--bg-white); border-radius: 12px; padding: 25px; box-shadow: var(--shadow); max-width: 600px;">
+                        <h3>Account Settings</h3>
+                        <div style="margin-top: 20px;">
+                            <button class="btn btn-secondary" onclick="openEditProfileModal()" style="width: 100%; margin-bottom: 10px;">
+                                <i class="fas fa-user"></i> Edit Profile
+                            </button>
+                            <button class="btn btn-secondary" style="width: 100%; margin-bottom: 10px;">
+                                <i class="fas fa-lock"></i> Change Password
+                            </button>
+                            <button class="btn btn-warning" style="width: 100%; margin-bottom: 10px;">
+                                <i class="fas fa-history"></i> Clear Location History
+                            </button>
+                            <button class="btn btn-danger" onclick="deleteAccount()" style="width: 100%;">
+                                <i class="fas fa-trash"></i> Delete Account
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODALS -->
+    
+    <!-- EDIT PROFILE MODAL -->
+    <div id="editProfileModal" class="modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h2>Edit Profile</h2>
+                <button class="modal-close" onclick="closeModal('editProfileModal')">×</button>
+            </div>
+            <div class="modal-body">
+                <form id="editProfileForm" class="edit-profile-form">
+                    <div class="form-group">
+                        <label>Profile Photo</label>
+                        <div class="photo-upload">
+                            <input type="file" id="profilePhotoInput" class="photo-upload-input" accept="image/*" onchange="previewPhoto()">
+                            <div class="photo-upload-btn" onclick="document.getElementById('profilePhotoInput').click()">
+                                <i class="fas fa-cloud-upload-alt" style="font-size: 2rem; color: var(--primary); margin-bottom: 10px;"></i>
+                                <p>Click to upload profile photo</p>
+                                <p style="color: var(--text-light); font-size: 0.85rem;">JPG, PNG up to 5MB</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Full Name</label>
+                            <input type="text" id="editName" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Email</label>
+                            <input type="email" id="editEmail" required>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Phone Number</label>
+                            <input type="tel" id="editPhone" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Secondary Phone</label>
+                            <input type="tel" id="editSecondaryPhone">
+                        </div>
+                    </div>
+
+                    <div class="form-row full">
+                        <div class="form-group">
+                            <label>Department / Faculty</label>
+                            <input type="text" id="editDepartment">
+                        </div>
+                    </div>
+
+                    <div class="form-row full">
+                        <div class="form-group">
+                            <label>Hostel / Area</label>
+                            <input type="text" id="editHostel">
+                        </div>
+                    </div>
+
+                    <div class="form-row full">
+                        <div class="form-group">
+                            <label>Short Video (Optional)</label>
+                            <input type="file" id="editVideo" accept="video/*">
+                            <p style="color: var(--text-light); font-size: 0.85rem; margin-top: 5px;">MP4, WebM up to 50MB</p>
+                        </div>
+                    </div>
+
+                    <div class="form-row full">
+                        <div class="form-group">
+                            <label>Emergency Contact Name</label>
+                            <input type="text" id="editEmergencyName">
+                        </div>
+                    </div>
+
+                    <div class="form-row full">
+                        <div class="form-group">
+                            <label>Emergency Contact Phone</label>
+                            <input type="tel" id="editEmergencyPhone">
+                        </div>
+                    </div>
+
+                    <div class="form-row full">
+                        <div class="form-group">
+                            <label>Notes / Status</label>
+                            <textarea id="editNotes" rows="4" placeholder="e.g., Going off-campus, Returning late..."></textarea>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('editProfileModal')">Cancel</button>
+                <button class="btn btn-primary" onclick="saveEditProfile()">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- GROUP APPLICATION MODAL -->
+    <div id="groupApplicationModal" class="modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h2>Apply for a Group</h2>
+                <button class="modal-close" onclick="closeModal('groupApplicationModal')">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="info-box">
+                    <i class="fas fa-info-circle"></i> Group applications are reviewed manually. Be detailed and honest.
+                </div>
+                <form id="groupApplicationForm" class="group-application-form" style="margin-top: 20px;">
+                    <div class="form-group">
+                        <label>Group Purpose</label>
+                        <textarea id="groupPurpose" rows="3" placeholder="Why do you want to create/join this group?" required></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Number of Members</label>
+                        <input type="number" id="groupMemberCount" min="2" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Relationship Between Members</label>
+                        <textarea id="groupRelationship" rows="2" placeholder="E.g., classmates, friends, roommates..." required></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Safety Justification</label>
+                        <textarea id="groupSafetyReason" rows="3" placeholder="Why is location tracking important for this group?" required></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Supporting Document (Optional)</label>
+                        <input type="file" id="groupDocument">
+                        <p style="color: var(--text-light); font-size: 0.85rem; margin-top: 5px;">Upload ID, group photo, or other verification</p>
+                    </div>
+
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" id="groupAgree" required>
+                            <span style="margin-left: 8px;">I agree that this group is for safety purposes only and understand location sharing is consent-based</span>
+                        </label>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('groupApplicationModal')">Cancel</button>
+                <button class="btn btn-primary" onclick="submitGroupApplication()">Submit Application</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- VIEW LOCATION MODAL -->
+    <div id="viewLocationModal" class="modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 id="viewLocationTitle">User Location</h2>
+                <button class="modal-close" onclick="closeModal('viewLocationModal')">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="map-container">
+                    <div id="viewLocationMap" style="width: 100%; height: 400px;"></div>
+                </div>
+                <div class="coordinates-display" style="margin-top: 20px;">
+                    <div class="coord-label">Last Known Location</div>
+                    <div class="coord-value" id="viewLocationCoords">Loading...</div>
+                    <div class="coord-label" style="margin-top: 10px;">Last Updated</div>
+                    <div class="coord-value" id="viewLocationTime">--</div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('viewLocationModal')">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ===== FIREBASE CONFIGURATION =====
+       
+        // Firebase config
+        const firebaseConfig = {
+            apiKey: "AIzaSyDW8V2SjNITrA4LcdmeILh944mTbOKnM0c",
+            authDomain: "rewarderhub.firebaseapp.com",
+            projectId: "rewarderhub",
+            storageBucket: "rewarderhub.appspot.com",
+            messagingSenderId: "85965945106",
+            appId: "1:85965945106:web:fa0a57d8968926e1041bcb",
+            measurementId: "G-F2ERB5NGN0"
+        };
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+        const storage = firebase.storage();
+
+        // ===== GLOBAL STATE =====
+        let currentUser = null;
+        let currentUserData = null;
+        let allUsers = [];
+        let usersFriends = [];
+        let userGroups = [];
+        let userLocation = { lat: 0, lng: 0 };
+        let liveMap = null;
+        let isTracking = false;
+        let trackingInterval = null;
+        let privacyMode = 'public';
+
+        // ===== AUTH FUNCTIONS =====
+        function toggleAuthForm() {
+            document.getElementById('loginForm').style.display = 
+                document.getElementById('loginForm').style.display === 'none' ? 'block' : 'none';
+            document.getElementById('signupForm').style.display = 
+                document.getElementById('signupForm').style.display === 'none' ? 'block' : 'none';
+        }
+
+        document.getElementById('loginFormElement')?.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+
+            try {
+                await auth.signInWithEmailAndPassword(email, password);
+                showToast('Login successful!', 'success');
+            } catch (error) {
+                showToast(error.message, 'error');
+            }
+        });
+
+        document.getElementById('signupFormElement')?.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const name = document.getElementById('signupName').value;
+            const email = document.getElementById('signupEmail').value;
+            const phone = document.getElementById('signupPhone').value;
+            const password = document.getElementById('signupPassword').value;
+            const confirmPassword = document.getElementById('signupConfirmPassword').value;
+
+            if (password !== confirmPassword) {
+                showToast('Passwords do not match', 'error');
+                return;
+            }
+
+            try {
+                const result = await auth.createUserWithEmailAndPassword(email, password);
+                const userId = result.user.uid;
+
+                // Create user profile in Firestore
+                await db.collection('users').doc(userId).set({
+                    name: name,
+                    email: email,
+                    phone: phone,
+                    createdAt: new Date(),
+                    privacyMode: 'public',
+                    isTracking: false,
+                    isAdmin: false,
+                    photoURL: null,
+                    videoURL: null,
+                    secondaryPhone: '',
+                    department: '',
+                    hostel: '',
+                    emergencyContactName: '',
+                    emergencyContactPhone: '',
+                    notes: ''
+                });
+
+                showToast('Account created successfully!', 'success');
+                setTimeout(() => toggleAuthForm(), 1000);
+            } catch (error) {
+                showToast(error.message, 'error');
+            }
+        });
+
+        // ===== AUTH STATE LISTENER =====
+        auth.onAuthStateChanged(async (user) => {
+            if (user) {
+                currentUser = user;
+                const userDoc = await db.collection('users').doc(user.uid).get();
+                currentUserData = userDoc.data();
+
+                console.log('User logged in:', user.uid);
+                console.log('User data from Firestore:', currentUserData);
+
+                // Ensure user profile has required fields
+                if (currentUserData && currentUserData.name && currentUserData.email && currentUserData.phone) {
+                    console.log('User profile complete, ready to search');
+                } else {
+                    console.warn('User profile incomplete - please complete "Edit Profile" first');
+                    showToast('Please complete your profile first', 'warning');
+                }
+
+                // Show dashboard
+                document.getElementById('authContainer').style.display = 'none';
+                document.getElementById('dashboardContainer').style.display = 'flex';
+
+                // Update UI
+                updateUserDisplay();
+                initializeTracking();
+                
+                // Load users with delay to ensure data is ready
+                setTimeout(() => {
+                    loadAllUsers();
+                }, 500);
+                
+                loadUserFriends();
+                loadUserGroups();
+
+                // Check if admin
+                if (currentUserData.isAdmin) {
+                    document.getElementById('adminMenuLink').style.display = 'block';
+                    loadGroupApplications();
+                }
+
+                // Set privacy mode
+                privacyMode = currentUserData.privacyMode || 'public';
+                updatePrivacyUI();
+
+            } else {
+                currentUser = null;
+                currentUserData = null;
+                document.getElementById('authContainer').style.display = 'flex';
+                document.getElementById('dashboardContainer').style.display = 'none';
+            }
+        });
+
+        function logout() {
+            auth.signOut().then(() => {
+                showToast('Logged out successfully', 'success');
+            });
+        }
+
+        // ===== UI UPDATE FUNCTIONS =====
+        function updateUserDisplay() {
+            const name = currentUserData.name;
+            const email = currentUserData.email;
+            const initial = name.charAt(0).toUpperCase();
+
+            document.getElementById('displayName').textContent = name;
+            document.getElementById('displayPhone').textContent = currentUserData.phone;
+            document.getElementById('displayEmail').textContent = email;
+            document.getElementById('userNameSidebar').textContent = name;
+            document.getElementById('userEmailSidebar').textContent = email;
+            document.getElementById('userAvatarSidebar').textContent = initial;
+
+            // Update form fields
+            document.getElementById('editName').value = name;
+            document.getElementById('editEmail').value = email;
+            document.getElementById('editPhone').value = currentUserData.phone;
+            document.getElementById('editSecondaryPhone').value = currentUserData.secondaryPhone || '';
+            document.getElementById('editDepartment').value = currentUserData.department || '';
+            document.getElementById('editHostel').value = currentUserData.hostel || '';
+            document.getElementById('editEmergencyName').value = currentUserData.emergencyContactName || '';
+            document.getElementById('editEmergencyPhone').value = currentUserData.emergencyContactPhone || '';
+            document.getElementById('editNotes').value = currentUserData.notes || '';
+
+            // Update profile photo
+            if (currentUserData.photoURL) {
+                document.getElementById('profilePhotoDisplay').innerHTML = `<img src="${currentUserData.photoURL}" alt="Profile">`;
+            }
+        }
+
+        function updatePrivacyUI() {
+            if (privacyMode === 'public') {
+                document.getElementById('publicOption').classList.add('selected');
+                document.getElementById('privateOption').classList.remove('selected');
+            } else {
+                document.getElementById('publicOption').classList.remove('selected');
+                document.getElementById('privateOption').classList.add('selected');
+            }
+        }
+
+        // ===== TAB SWITCHING =====
+        function switchTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+
+            // Remove active from all menu links
+            document.querySelectorAll('.sidebar-menu-link').forEach(link => {
+                link.classList.remove('active');
+            });
+
+            // Show selected tab
+            document.getElementById(tabName + 'Tab').classList.add('active');
+
+            // Add active to clicked link
+            event.target.closest('.sidebar-menu-link').classList.add('active');
+
+            // Update page title
+            const titles = {
+                trackMe: 'Track Me',
+                findPerson: 'Find a Person',
+                groups: 'Groups',
+                friends: 'Friends',
+                admin: 'Admin Panel',
+                settings: 'Settings'
+            };
+            document.getElementById('pageTitle').textContent = titles[tabName] || 'TrackMe';
+
+            // Initialize maps if needed
+            if (tabName === 'trackMe' && !liveMap) {
+                setTimeout(() => initializeMap(), 100);
+            }
+        }
+
+        function switchAdminTab(tabName) {
+            document.querySelectorAll('.admin-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.querySelectorAll('.admin-tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+
+            document.getElementById(tabName + 'Content').classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        // ===== TRACKING FUNCTIONS =====
+        async function initializeTracking() {
+            if (!isTracking) {
+                startTracking();
+            }
+        }
+
+        function startTracking() {
+            isTracking = true;
+            document.getElementById('trackingToggle').classList.add('active');
+
+            if (navigator.geolocation) {
+                trackingInterval = setInterval(() => {
+                    navigator.geolocation.getCurrentPosition(async (position) => {
+                        userLocation.lat = position.coords.latitude;
+                        userLocation.lng = position.coords.longitude;
+
+                        // Update display
+                        document.getElementById('latDisplay').textContent = userLocation.lat.toFixed(4);
+                        document.getElementById('lonDisplay').textContent = userLocation.lng.toFixed(4);
+                        document.getElementById('lastUpdated').textContent = `Last updated: ${new Date().toLocaleTimeString()}`;
+
+                        // Update map
+                        if (liveMap) {
+                            liveMap.setCenter(userLocation);
+                        }
+
+                        // Save to Firestore
+                        if (currentUser) {
+                            await db.collection('locations').doc(currentUser.uid).set({
+                                userId: currentUser.uid,
+                                latitude: userLocation.lat,
+                                longitude: userLocation.lng,
+                                timestamp: new Date(),
+                                isVisible: privacyMode === 'public'
+                            }, { merge: true });
+
+                            // Update user document
+                            await db.collection('users').doc(currentUser.uid).update({
+                                isTracking: true,
+                                lastLocation: {
+                                    latitude: userLocation.lat,
+                                    longitude: userLocation.lng,
+                                    timestamp: new Date()
+                                }
+                            });
+                        }
+                    });
+                }, 5000); // Update every 5 seconds
+            }
+        }
+
+        function pauseTracking() {
+            isTracking = false;
+            clearInterval(trackingInterval);
+            document.getElementById('trackingToggle').classList.remove('active');
+            document.getElementById('liveStatusDisplay').innerHTML = '<i class="fas fa-pause" style="font-size: 1.2rem; color: var(--warning);"></i> <span>Paused</span>';
+            showToast('Tracking paused', 'warning');
+        }
+
+        function toggleTracking() {
+            if (isTracking) {
+                pauseTracking();
+            } else {
+                startTracking();
+                document.getElementById('liveStatusDisplay').innerHTML = '<div class="live-indicator"></div><span>Live - Updating</span>';
+                showToast('Tracking resumed', 'success');
+            }
+        }
+
+        async function goInvisible() {
+            await db.collection('users').doc(currentUser.uid).update({
+                isVisible: false,
+                invisibleUntil: new Date(Date.now() + 60 * 60 * 1000) // 1 hour
+            });
+            showToast('You are now invisible. Will be visible again in 1 hour.', 'success');
+        }
+
+        function initializeMap() {
+            const mapContainer = document.getElementById('liveMap');
+            if (!mapContainer || liveMap) return;
+
+            liveMap = new google.maps.Map(mapContainer, {
+                zoom: 17,
+                center: { lat: userLocation.lat, lng: userLocation.lng }
+            });
+
+            new google.maps.Marker({
+                position: { lat: userLocation.lat, lng: userLocation.lng },
+                map: liveMap,
+                title: currentUserData.name,
+                icon: 'http://maps.google.com/mapfiles/ms/icons/blue-dot.png'
+            });
+        }
+
+        // ===== PRIVACY FUNCTIONS =====
+        async function setPrivacyMode(mode) {
+            privacyMode = mode;
+            updatePrivacyUI();
+
+            await db.collection('users').doc(currentUser.uid).update({
+                privacyMode: mode
+            });
+
+            // Update current location visibility
+            await db.collection('locations').doc(currentUser.uid).update({
+                isVisible: mode === 'public'
+            });
+
+            showToast(`Privacy mode set to ${mode}`, 'success');
+        }
+
+        // ===== PROFILE FUNCTIONS =====
+        function openEditProfileModal() {
+            document.getElementById('editProfileModal').classList.add('show');
+        }
+
+        async function saveEditProfile() {
+            const name = document.getElementById('editName').value;
+            const email = document.getElementById('editEmail').value;
+            const phone = document.getElementById('editPhone').value;
+            const secondaryPhone = document.getElementById('editSecondaryPhone').value;
+            const department = document.getElementById('editDepartment').value;
+            const hostel = document.getElementById('editHostel').value;
+            const emergencyName = document.getElementById('editEmergencyName').value;
+            const emergencyPhone = document.getElementById('editEmergencyPhone').value;
+            const notes = document.getElementById('editNotes').value;
+
+            try {
+                // Handle photo upload
+                const photoFile = document.getElementById('profilePhotoInput').files[0];
+                let photoURL = currentUserData.photoURL;
+
+                if (photoFile) {
+                    const photoRef = storage.ref(`profile-photos/${currentUser.uid}`);
+                    await photoRef.put(photoFile);
+                    photoURL = await photoRef.getDownloadURL();
+                }
+
+                // Update user document
+                await db.collection('users').doc(currentUser.uid).update({
+                    name: name,
+                    email: email,
+                    phone: phone,
+                    secondaryPhone: secondaryPhone,
+                    department: department,
+                    hostel: hostel,
+                    emergencyContactName: emergencyName,
+                    emergencyContactPhone: emergencyPhone,
+                    notes: notes,
+                    photoURL: photoURL
+                });
+
+                // Reload user data
+                const userDoc = await db.collection('users').doc(currentUser.uid).get();
+                currentUserData = userDoc.data();
+                updateUserDisplay();
+
+                closeModal('editProfileModal');
+                showToast('Profile updated successfully', 'success');
+            } catch (error) {
+                showToast('Error updating profile: ' + error.message, 'error');
+            }
+        }
+
+        function previewPhoto() {
+            const file = document.getElementById('profilePhotoInput').files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    document.getElementById('profilePhotoDisplay').innerHTML = `<img src="${e.target.result}" alt="Preview">`;
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        // ===== FIND PERSON FUNCTIONS =====
+        async function loadAllUsers() {
+            try {
+                const snapshot = await db.collection('users').get();
+                allUsers = [];
+
+                console.log('Total users in database:', snapshot.size);
+
+                snapshot.forEach(doc => {
+                    const userData = { id: doc.id, ...doc.data() };
+                    console.log('User:', userData.name, 'Privacy:', userData.privacyMode, 'ID:', doc.id);
+                    
+                    if (doc.id !== currentUser.uid) { // Exclude self
+                        allUsers.push(userData);
+                    }
+                });
+
+                console.log('Loaded all users (excluding self):', allUsers);
+                const publicUsers = allUsers.filter(u => u.privacyMode === 'public');
+                console.log('Public users:', publicUsers);
+                
+                // Show count
+                const countDisplay = document.getElementById('userCountDisplay');
+                if (countDisplay) {
+                    countDisplay.innerHTML = `<p style="color: var(--text-light); margin-bottom: 15px;"><strong>${publicUsers.length}</strong> public users found</p>`;
+                }
+                
+                displayUsers(publicUsers);
+            } catch (error) {
+                console.error('Error loading users:', error);
+                showToast('Error loading users: ' + error.message, 'error');
+            }
+        }
+
+        function displayUsers(users) {
+            const grid = document.getElementById('usersGrid');
+            grid.innerHTML = '';
+
+            users.forEach(user => {
+                const userCard = document.createElement('div');
+                userCard.className = 'user-card';
+                
+                const viewLocBtnId = 'viewLocBtn_' + user.id;
+                const addFriendBtnId = 'addFriendBtn_' + user.id;
+                
+                userCard.innerHTML = `
+                    <div class="user-card-photo">
+                        ${user.photoURL ? `<img src="${user.photoURL}" alt="${user.name}">` : `<i class="fas fa-user"></i>`}
+                    </div>
+                    <div class="user-card-content">
+                        <div class="user-card-name">${user.name}</div>
+                        <div class="user-card-status">${user.privacyMode === 'public' ? 'Public' : 'Friends Only'}</div>
+                        <div class="user-card-location">
+                            <i class="fas fa-map-marker-alt"></i>
+                            ${user.lastLocation ? 'Last seen nearby' : 'No location'}
+                        </div>
+                        <div class="user-card-actions">
+                            <button class="btn-view-location" id="${viewLocBtnId}">
+                                <i class="fas fa-map-marker-alt"></i> View Location
+                            </button>
+                            <button class="btn-add-friend" id="${addFriendBtnId}">
+                                <i class="fas fa-user-plus"></i> Add Friend
+                            </button>
+                        </div>
+                    </div>
+                `;
+                grid.appendChild(userCard);
+                
+                // Add event listeners
+                document.getElementById(viewLocBtnId).addEventListener('click', () => {
+                    viewUserLocation(user.id, user.name);
+                });
+                
+                document.getElementById(addFriendBtnId).addEventListener('click', () => {
+                    addFriend(user.id, user.name);
+                });
+            });
+
+            if (users.length === 0) {
+                grid.innerHTML = '<p style="text-align: center; color: var(--text-light); grid-column: 1 / -1;">No users found</p>';
+            }
+        }
+
+        function searchUsers() {
+            const query = document.getElementById('searchInput').value.toLowerCase().trim();
+            
+            if (!query) {
+                const publicUsers = allUsers.filter(u => u.privacyMode === 'public');
+                document.getElementById('userCountDisplay').innerHTML = `<p style="color: var(--text-light); margin-bottom: 15px;"><strong>${publicUsers.length}</strong> public users found</p>`;
+                displayUsers(publicUsers);
+                return;
+            }
+            
+            const filtered = allUsers.filter(u =>
+                u.privacyMode === 'public' && (
+                    (u.name && u.name.toLowerCase().includes(query)) ||
+                    (u.email && u.email.toLowerCase().includes(query)) ||
+                    (u.phone && u.phone.includes(query))
+                )
+            );
+            
+            console.log('Search query:', query);
+            console.log('All users available:', allUsers.length);
+            console.log('Public users:', allUsers.filter(u => u.privacyMode === 'public').length);
+            console.log('Filtered users:', filtered);
+            
+            document.getElementById('userCountDisplay').innerHTML = `<p style="color: var(--text-light); margin-bottom: 15px;">Search: <strong>"${query}"</strong> - Found <strong>${filtered.length}</strong> result(s)</p>`;
+            displayUsers(filtered);
+        }
+
+        function filterUsers(filter) {
+            document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+
+            let filtered = allUsers;
+
+            if (filter === 'public') {
+                filtered = allUsers.filter(u => u.privacyMode === 'public');
+            } else if (filter === 'friends') {
+                filtered = allUsers.filter(u => usersFriends.some(f => f.friendId === u.id || f.userId === u.id));
+            }
+
+            displayUsers(filtered);
+        }
+
+        async function viewUserLocation(userId, userName) {
+            document.getElementById('viewLocationTitle').textContent = `${userName}'s Location`;
+            document.getElementById('viewLocationModal').classList.add('show');
+
+            try {
+                const locationDoc = await db.collection('locations').doc(userId).get();
+                if (locationDoc.exists) {
+                    const data = locationDoc.data();
+                    const coords = `${data.latitude.toFixed(4)}, ${data.longitude.toFixed(4)}`;
+                    document.getElementById('viewLocationCoords').textContent = coords;
+                    document.getElementById('viewLocationTime').textContent = data.timestamp?.toDate().toLocaleString() || '--';
+
+                    // Initialize map
+                    const mapContainer = document.getElementById('viewLocationMap');
+                    const map = new google.maps.Map(mapContainer, {
+                        zoom: 17,
+                        center: { lat: data.latitude, lng: data.longitude }
+                    });
+
+                    new google.maps.Marker({
+                        position: { lat: data.latitude, lng: data.longitude },
+                        map: map,
+                        title: userName
+                    });
+                }
+            } catch (error) {
+                showToast('Could not load location', 'error');
+            }
+        }
+
+        // ===== FRIENDS FUNCTIONS =====
+        async function loadUserFriends() {
+            try {
+                // Get friendships where user is requester AND status is accepted
+                const snapshot1 = await db.collection('friendships')
+                    .where('requester', '==', currentUser.uid)
+                    .where('status', '==', 'accepted')
+                    .get();
+
+                // Get friendships where user is friendId AND status is accepted
+                const snapshot2 = await db.collection('friendships')
+                    .where('friendId', '==', currentUser.uid)
+                    .where('status', '==', 'accepted')
+                    .get();
+
+                usersFriends = [];
+                
+                snapshot1.forEach(doc => {
+                    usersFriends.push({ id: doc.id, ...doc.data() });
+                });
+                
+                snapshot2.forEach(doc => {
+                    usersFriends.push({ id: doc.id, ...doc.data() });
+                });
+
+                console.log('Loaded friends:', usersFriends);
+                
+                const countDisplay = document.getElementById('friendsCountDisplay');
+                if (countDisplay) {
+                    countDisplay.innerHTML = `<p style="color: var(--text-light); margin-bottom: 15px;"><strong>${usersFriends.length}</strong> friend(s)</p>`;
+                }
+                
+                displayFriends();
+            } catch (error) {
+                console.error('Error loading friends:', error);
+            }
+        }
+
+        async function displayFriends() {
+            const container = document.getElementById('friendsList');
+            container.innerHTML = '';
+
+            if (usersFriends.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: var(--text-light); grid-column: 1 / -1;">No friends yet</p>';
+                return;
+            }
+
+            for (const friendship of usersFriends) {
+                const friendId = friendship.friendId === currentUser.uid ? friendship.requester : friendship.friendId;
+                const friendDoc = await db.collection('users').doc(friendId).get();
+                
+                if (!friendDoc.exists) continue;
+                
+                const friend = friendDoc.data();
+
+                const card = document.createElement('div');
+                card.className = 'user-card';
+                
+                const viewLocBtnId = 'viewFriendLocBtn_' + friendId;
+                const removeBtnId = 'removeFriendBtn_' + friendship.id;
+                
+                card.innerHTML = `
+                    <div class="user-card-photo">
+                        ${friend.photoURL ? `<img src="${friend.photoURL}" alt="${friend.name}">` : `<i class="fas fa-user"></i>`}
+                    </div>
+                    <div class="user-card-content">
+                        <div class="user-card-name">${friend.name}</div>
+                        <div class="user-card-status">Friend</div>
+                        <div class="user-card-location">
+                            <i class="fas fa-heart"></i> Connected
+                        </div>
+                        <div class="user-card-actions">
+                            <button class="btn-view-location" id="${viewLocBtnId}">
+                                <i class="fas fa-map-marker-alt"></i> View Location
+                            </button>
+                            <button class="btn-danger" id="${removeBtnId}">
+                                <i class="fas fa-trash"></i> Remove
+                            </button>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(card);
+                
+                // Add event listeners
+                document.getElementById(viewLocBtnId).addEventListener('click', () => {
+                    viewUserLocation(friendId, friend.name);
+                });
+                
+                document.getElementById(removeBtnId).addEventListener('click', () => {
+                    removeFriend(friendship.id);
+                });
+            }
+        }
+
+        async function addFriend(friendId, friendName) {
+            try {
+                await db.collection('friendships').add({
+                    requester: currentUser.uid,
+                    friendId: friendId,
+                    status: 'pending',
+                    createdAt: new Date()
+                });
+                showToast(`Friend request sent to ${friendName}`, 'success');
+            } catch (error) {
+                showToast('Error sending friend request', 'error');
+            }
+        }
+
+        async function removeFriend(friendshipId) {
+            try {
+                await db.collection('friendships').doc(friendshipId).delete();
+                loadUserFriends();
+                showToast('Friend removed', 'success');
+            } catch (error) {
+                showToast('Error removing friend', 'error');
+            }
+        }
+
+        async function searchFriends() {
+            const query = document.getElementById('friendSearchInput').value.toLowerCase().trim();
+            
+            if (!query) {
+                const countDisplay = document.getElementById('friendsCountDisplay');
+                if (countDisplay) {
+                    countDisplay.innerHTML = `<p style="color: var(--text-light); margin-bottom: 15px;"><strong>${usersFriends.length}</strong> friend(s)</p>`;
+                }
+                displayFriends();
+                return;
+            }
+            
+            // Search in all users for potential friends
+            const filtered = allUsers.filter(u =>
+                (u.name && u.name.toLowerCase().includes(query)) || 
+                (u.email && u.email.toLowerCase().includes(query)) ||
+                (u.phone && u.phone.includes(query))
+            );
+            
+            console.log('Friend search query:', query);
+            console.log('Search results:', filtered);
+            
+            const countDisplay = document.getElementById('friendsCountDisplay');
+            if (countDisplay) {
+                countDisplay.innerHTML = `<p style="color: var(--text-light); margin-bottom: 15px;">Search: <strong>"${query}"</strong> - Found <strong>${filtered.length}</strong> result(s)</p>`;
+            }
+            
+            displayUsers(filtered);
+        }
+
+        // ===== GROUPS FUNCTIONS =====
+        async function loadUserGroups() {
+            try {
+                const snapshot = await db.collection('groups')
+                    .where('members', 'array-contains', currentUser.uid)
+                    .get();
+
+                userGroups = [];
+                snapshot.forEach(doc => {
+                    userGroups.push({ id: doc.id, ...doc.data() });
+                });
+
+                displayGroups();
+            } catch (error) {
+                console.error('Error loading groups:', error);
+            }
+        }
+
+        function displayGroups() {
+            const container = document.getElementById('groupsList');
+            container.innerHTML = '';
+
+            if (userGroups.length === 0) {
+                container.innerHTML = '<p style="color: var(--text-light); text-align: center;">You are not in any groups yet.</p>';
+                return;
+            }
+
+            userGroups.forEach(group => {
+                const groupCard = document.createElement('div');
+                groupCard.className = 'group-card';
+                groupCard.innerHTML = `
+                    <div class="group-header">
+                        <div>
+                            <div class="group-title">${group.groupName}</div>
+                            <div class="group-members">${group.members.length} members</div>
+                        </div>
+                        <span class="group-status ${group.status === 'active' ? 'active' : 'pending'}">
+                            ${group.status === 'active' ? 'Active' : 'Pending'}
+                        </span>
+                    </div>
+                    <div class="group-description">${group.purpose || 'No description'}</div>
+                    <div class="group-map" id="groupMap-${group.id}"></div>
+                    <button class="btn btn-secondary" onclick="leaveGroup('${group.id}')" style="width: 100%;">
+                        <i class="fas fa-sign-out-alt"></i> Leave Group
+                    </button>
+                `;
+                container.appendChild(groupCard);
+
+                // Initialize group map
+                setTimeout(() => {
+                    const mapContainer = document.getElementById(`groupMap-${group.id}`);
+                    if (mapContainer) {
+                        new google.maps.Map(mapContainer, {
+                            zoom: 15,
+                            center: { lat: 6.5244, lng: 3.3792 } // LASU coordinates
+                        });
+                    }
+                }, 100);
+            });
+        }
+
+        function openGroupApplicationModal() {
+            document.getElementById('groupApplicationModal').classList.add('show');
+        }
+
+        async function submitGroupApplication() {
+            const purpose = document.getElementById('groupPurpose').value;
+            const memberCount = document.getElementById('groupMemberCount').value;
+            const relationship = document.getElementById('groupRelationship').value;
+            const safetyReason = document.getElementById('groupSafetyReason').value;
+
+            if (!purpose || !memberCount || !relationship || !safetyReason) {
+                showToast('Please fill all fields', 'error');
+                return;
+            }
+
+            try {
+                const docRef = await db.collection('groupApplications').add({
+                    userId: currentUser.uid,
+                    userName: currentUserData.name,
+                    userEmail: currentUserData.email,
+                    userPhone: currentUserData.phone,
+                    purpose: purpose,
+                    memberCount: parseInt(memberCount),
+                    relationship: relationship,
+                    safetyReason: safetyReason,
+                    status: 'pending',
+                    createdAt: new Date()
+                });
+
+                showToast('Application submitted! Admin will review shortly.', 'success');
+                closeModal('groupApplicationModal');
+                document.getElementById('groupApplicationForm').reset();
+            } catch (error) {
+                showToast('Error submitting application: ' + error.message, 'error');
+            }
+        }
+
+        async function leaveGroup(groupId) {
+            if (!confirm('Are you sure you want to leave this group?')) return;
+
+            try {
+                await db.collection('groups').doc(groupId).update({
+                    members: firebase.firestore.FieldValue.arrayRemove(currentUser.uid)
+                });
+
+                loadUserGroups();
+                showToast('You left the group', 'success');
+            } catch (error) {
+                showToast('Error leaving group', 'error');
+            }
+        }
+
+        // ===== ADMIN FUNCTIONS =====
+        async function loadGroupApplications() {
+            try {
+                const snapshot = await db.collection('groupApplications')
+                    .where('status', '==', 'pending')
+                    .orderBy('createdAt', 'desc')
+                    .get();
+
+                const container = document.getElementById('applicationsList');
+                container.innerHTML = '';
+
+                snapshot.forEach(doc => {
+                    const app = doc.data();
+                    const appItem = document.createElement('div');
+                    appItem.className = 'application-item';
+                    appItem.innerHTML = `
+                        <div class="application-header">
+                            <div>
+                                <div class="application-user">${app.userName}</div>
+                                <div class="application-date">${app.createdAt.toDate().toLocaleDateString()}</div>
+                            </div>
+                        </div>
+                        <div class="application-content">
+                            <strong>Purpose:</strong> ${app.purpose}<br>
+                            <strong>Members:</strong> ${app.memberCount}<br>
+                            <strong>Relationship:</strong> ${app.relationship}<br>
+                            <strong>Safety Reason:</strong> ${app.safetyReason}<br>
+                            <strong>Contact:</strong> ${app.userEmail} | ${app.userPhone}
+                        </div>
+                        <div class="application-actions">
+                            <button class="btn btn-success" onclick="approveApplication('${doc.id}', '${app.userId}', '${app.userName}')">
+                                <i class="fas fa-check"></i> Approve
+                            </button>
+                            <button class="btn btn-danger" onclick="rejectApplication('${doc.id}')">
+                                <i class="fas fa-times"></i> Reject
+                            </button>
+                        </div>
+                    `;
+                    container.appendChild(appItem);
+                });
+
+                if (snapshot.empty) {
+                    container.innerHTML = '<p style="color: var(--text-light); text-align: center;">No pending applications</p>';
+                }
+            } catch (error) {
+                console.error('Error loading applications:', error);
+            }
+        }
+
+        async function approveApplication(appId, userId, userName) {
+            try {
+                // Create group
+                const groupRef = await db.collection('groups').add({
+                    groupName: `${userName}'s Group`,
+                    purpose: (await db.collection('groupApplications').doc(appId).get()).data().purpose,
+                    members: [userId],
+                    createdBy: userId,
+                    createdAt: new Date(),
+                    status: 'active'
+                });
+
+                // Update application
+                await db.collection('groupApplications').doc(appId).update({
+                    status: 'approved'
+                });
+
+                loadGroupApplications();
+                showToast('Application approved! Group created.', 'success');
+            } catch (error) {
+                showToast('Error approving application', 'error');
+            }
+        }
+
+        async function rejectApplication(appId) {
+            try {
+                await db.collection('groupApplications').doc(appId).update({
+                    status: 'rejected'
+                });
+
+                loadGroupApplications();
+                showToast('Application rejected', 'success');
+            } catch (error) {
+                showToast('Error rejecting application', 'error');
+            }
+        }
+
+        // ===== MODAL FUNCTIONS =====
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('show');
+        }
+
+        document.addEventListener('click', (e) => {
+            if (e.target.classList.contains('modal-overlay')) {
+                e.target.classList.remove('show');
+            }
+        });
+
+        // ===== UTILITY FUNCTIONS =====
+        function showToast(message, type = 'success') {
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+
+            setTimeout(() => {
+                toast.style.animation = 'slideInRight 0.3s reverse';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        function openNotifications() {
+            showToast('No new notifications', 'success');
+        }
+
+        async function deleteAccount() {
+            if (!confirm('This will permanently delete your account. Are you sure?')) return;
+
+            try {
+                // Delete user data
+                await db.collection('users').doc(currentUser.uid).delete();
+                await db.collection('locations').doc(currentUser.uid).delete();
+
+                // Delete Firebase auth user
+                await currentUser.delete();
+                showToast('Account deleted', 'success');
+            } catch (error) {
+                showToast('Error deleting account: ' + error.message, 'error');
+            }
+        }
+    </script>
+</body>
+</html>
