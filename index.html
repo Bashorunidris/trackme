@@ -3873,16 +3873,23 @@
         }
 
         async function submitGroupApplication() {
-            const purpose = document.getElementById('groupPurpose').value;
-            const memberCount = document.getElementById('groupMemberCount').value;
-            const relationship = document.getElementById('groupRelationship').value;
-            const safetyReason = document.getElementById('groupSafetyReason').value;
+            // Get button and set loading state
+            const submitBtn = document.querySelector('.modal-footer .btn-primary');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
+
+            // Trim and validate all fields
+            const purpose = document.getElementById('groupPurpose').value?.trim();
+            const memberCount = document.getElementById('groupMemberCount').value?.trim();
+            const relationship = document.getElementById('groupRelationship').value?.trim();
+            const safetyReason = document.getElementById('groupSafetyReason').value?.trim();
 
             // Get social media handles
-            const instagram = document.getElementById('groupInstagram').value.trim();
-            const twitter = document.getElementById('groupTwitter').value.trim();
-            const facebook = document.getElementById('groupFacebook').value.trim();
-            const tiktok = document.getElementById('groupTiktok').value.trim();
+            const instagram = document.getElementById('groupInstagram').value?.trim();
+            const twitter = document.getElementById('groupTwitter').value?.trim();
+            const facebook = document.getElementById('groupFacebook').value?.trim();
+            const tiktok = document.getElementById('groupTiktok').value?.trim();
 
             // Count filled social media handles
             const socialMediaCount = [instagram, twitter, facebook, tiktok].filter(h => h).length;
@@ -3890,6 +3897,8 @@
             // Validate basic fields
             if (!purpose || !memberCount || !relationship || !safetyReason) {
                 showToast('Please fill all required fields', 'error');
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalText;
                 return;
             }
 
@@ -3897,6 +3906,8 @@
             if (socialMediaCount < 2) {
                 document.getElementById('socialMediaValidation').style.display = 'block';
                 showToast('Please add at least 2 social media handles', 'warning');
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalText;
                 return;
             } else {
                 document.getElementById('socialMediaValidation').style.display = 'none';
@@ -3906,17 +3917,23 @@
             const photoFile = document.getElementById('groupUserPhoto').files[0];
             if (!photoFile) {
                 showToast('Please upload your profile picture', 'error');
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalText;
                 return;
             }
 
             try {
                 let photoURL = null;
 
-                // Upload photo to Cloud Storage
-                if (photoFile) {
-                    const photoRef = storage.ref(`group-applications/${currentUser.uid}/profile-photo`);
-                    await photoRef.put(photoFile);
-                    photoURL = await photoRef.getDownloadURL();
+                // Upload photo to Cloudinary
+                try {
+                    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Uploading photo...';
+                    photoURL = await uploadPhotoToCloudinary(photoFile);
+                    showToast('Photo uploaded successfully', 'success');
+                } catch (photoError) {
+                    console.error('Photo upload error:', photoError);
+                    showToast('Photo upload failed: ' + photoError.message, 'warning');
+                    // Continue without photo - don't block the application
                 }
 
                 // Prepare social media object
@@ -3928,6 +3945,8 @@
                 };
 
                 // Submit application
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting application...';
+                
                 const docRef = await db.collection('groupApplications').add({
                     userId: currentUser.uid,
                     userName: currentUserData.name,
@@ -3951,6 +3970,9 @@
             } catch (error) {
                 console.error('Error submitting application:', error);
                 showToast('Error submitting application: ' + error.message, 'error');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalText;
             }
         }
 
